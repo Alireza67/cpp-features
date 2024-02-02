@@ -3,12 +3,12 @@
 class Foo
 {
 public:
-	Foo(const int& value)
+	Foo(const double& value)
 	{
 		age = value;
 	}
 
-	int GetAge()
+	double GetAge()
 	{
 		return age;
 	}
@@ -27,7 +27,7 @@ public:
 	}
 
 private:
-	int age{};
+	double age{};
 };
 
 template<typename T>
@@ -59,4 +59,21 @@ TEST(Concept, overload)
 
 	auto result = GetFinalValue<Foo, int>(obj);
 	EXPECT_EQ(5, result);
+}
+
+
+template<typename T>
+concept wired = std::integral<T> && sizeof(T) == 4;
+
+template<wired T>
+T Printer(T input)
+{
+	return input;
+}
+
+TEST(Concept, integralCheck)
+{
+	EXPECT_EQ(5, Printer(static_cast<int>(5)));
+	//EXPECT_EQ(5, Printer(static_cast<short>(5))); couldn't compile
+	//EXPECT_EQ(5, Printer(static_cast<float>(5))); couldn't compile
 }
