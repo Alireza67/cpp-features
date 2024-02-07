@@ -1,11 +1,12 @@
 #include "pch.h"
 #include <thread>
 #include <latch>
+#include <barrier>
 #include <array>
 
 using namespace std::literals;
 
-TEST(latch, simple)
+TEST(threads, latch)
 {
     constexpr std::uint8_t max_threads = 5U;
     std::array<std::jthread, max_threads> works{};
@@ -15,7 +16,7 @@ TEST(latch, simple)
 
     for (auto it = std::begin(works); it != std::end(works); ++it)
     {
-        *it = std::jthread([&work_latch, &exit_latch, index = std::distance(std::begin(works), it)]() noexcept 
+        *it = std::jthread([&work_latch, &exit_latch]() noexcept 
             {
                 std::this_thread::sleep_for(1s);
                 work_latch.count_down();
@@ -37,5 +38,31 @@ TEST(latch, simple)
     {
         item.join();
         EXPECT_FALSE(item.joinable());
+    }
+}
+
+TEST(threads, barrier)
+{
+    constexpr std::uint8_t max_threads = 50;
+    std::array<std::jthread, max_threads> works{};
+    std::atomic<unsigned int> counter{};
+
+    std::barrier work_barrier(std::size(works), [&counter]() noexcept {
+        EXPECT_TRUE(counter >= max_threads);
+        EXPECT_FALSE(counter % max_threads);
+        });
+
+    for (auto it = std::begin(works); it != std::end(works); ++it)
+    {
+        *it = std::jthread([&work_barrier, &counter]() noexcept {
+                counter++;
+                work_barrier.arrive_and_wait();
+                counter++;
+                work_barrier.arrive_and_wait();
+                counter++;
+                work_barrier.arrive_and_wait();
+                counter++;
+                work_barrier.arrive_and_wait();
+                });
     }
 }
