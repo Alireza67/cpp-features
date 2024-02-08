@@ -45,6 +45,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="semaphores.cpp" />
+    <ClCompile Include="sourceLocation.cpp" />
     <ClCompile Include="threads.cpp" />
   </ItemGroup>
   <ItemGroup>
