@@ -47,6 +47,7 @@
     <ClCompile Include="semaphores.cpp" />
     <ClCompile Include="ranges.cpp" />
     <ClCompile Include="sourceLocation.cpp" />
+    <ClCompile Include="spaceship.cpp" />
     <ClCompile Include="span.cpp" />
     <ClCompile Include="threads.cpp" />
   </ItemGroup>
