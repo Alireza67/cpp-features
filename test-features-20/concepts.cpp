@@ -19,7 +19,7 @@ public:
 		return *this;
 	}
 
-	Foo& operator++(int)
+	Foo operator++(int)
 	{
 		auto tmp{*this};
 		operator++();
