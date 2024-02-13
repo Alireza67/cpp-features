@@ -36,6 +36,7 @@
     <ClInclude Include="pch.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="constructors.cpp" />
     <ClCompile Include="file_system.cpp" />
     <ClCompile Include="functor.cpp" />
     <ClCompile Include="io.cpp" />
