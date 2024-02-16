@@ -187,3 +187,88 @@ TEST(constructors, move_constructor)
 		EXPECT_EQ(5 * i, dataPtr2[i]);
 	}
 }
+
+class LegacyFoo4
+{
+public:
+
+	explicit LegacyFoo4(size_t size)
+		:size_(size)
+	{
+		array_ = new int[size_] {};
+		for (auto i{ 0 }; i < size_; i++)
+		{
+			array_[i] = i;
+		}
+	}
+
+	LegacyFoo4(const LegacyFoo4& rhs)
+		:LegacyFoo4(rhs.size_)
+	{
+		for (auto i{ 0 }; i < size_; i++)
+		{
+			array_[i] = rhs.array_[i];
+		}
+	}
+
+	LegacyFoo4(LegacyFoo4&& rhs) noexcept
+	{
+		array_ = std::exchange(rhs.array_, nullptr);
+		size_ = std::exchange(rhs.size_, 0);
+	}
+
+	LegacyFoo4& operator=(const LegacyFoo4& rhs)
+	{
+		if (this == &rhs)
+		{
+			return *this;
+		}
+
+		size_ = 0;
+		delete[] array_;
+		array_ = nullptr;
+
+		auto tmp = rhs;
+		std::swap(array_, tmp.array_);
+		std::swap(size_, tmp.size_);
+		return *this;
+	}
+
+	virtual ~LegacyFoo4()
+	{
+		if (array_)
+		{
+			delete[] array_;
+			array_ = nullptr;
+		}
+	}
+
+	std::tuple<int*, size_t> GetArray()
+	{
+		return { array_, size_ };
+	}
+
+private:
+	int* array_{};
+	size_t size_{};
+};
+
+TEST(constructors, copy_assignment)
+{
+	LegacyFoo4 obj(10);
+	obj = obj;
+	auto result1 = obj.GetArray();
+	for (auto i{ 0 }; i < std::get<size_t>(result1); i++)
+	{
+		std::get<int*>(result1)[i] = 5 * i;
+	}
+
+	LegacyFoo4 obj2(5);
+	obj2 = obj;
+	auto result2 = obj2.GetArray();
+
+	for (auto i{ 0 }; i < std::get<size_t>(result2); i++)
+	{
+		EXPECT_EQ(5 * i, std::get<int*>(result2)[i]);
+	}
+}
