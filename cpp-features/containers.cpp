@@ -11,9 +11,9 @@ TEST(containers, queue)
 		input.push(i);
 	}
 
-	for (int i{4}; i >= 0; i--)
+	for (int i{}; i < 5; i++)
 	{
-		EXPECT_EQ(i, input.back());
+		EXPECT_EQ(i, input.front());
 		input.pop();
 	}
 
