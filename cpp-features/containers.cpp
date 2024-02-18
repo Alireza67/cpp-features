@@ -1,5 +1,23 @@
 #include "pch.h"
 #include <deque>
+#include <queue>
+
+TEST(containers, queue)
+{
+	std::queue<int> input;
+
+	for (int i{}; i < 5; i++)
+	{
+		input.push(i);
+	}
+
+	for (int i{4}; i >= 0; i--)
+	{
+		EXPECT_EQ(i, input.back());
+		input.pop();
+	}
+
+}
 
 TEST(containers, deque)
 {
