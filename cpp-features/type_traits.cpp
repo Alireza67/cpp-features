@@ -1,7 +1,10 @@
 #include "pch.h"
 #include <iostream>
 #include <type_traits>
+#include <list>
+#include <queue>
 #include <iterator>
+#include <forward_list>
 
 template <typename T>
 std::string CheckType() {
@@ -69,8 +72,39 @@ TEST(typeTraits, difference_type)
     EXPECT_FLOAT_EQ(3, result);
 }
 
+template <typename IteratorType>
+std::string CheckCategory(IteratorType begin)
+{
+    typedef std::iterator_traits<IteratorType>::iterator_category Category;
 
+    if (std::is_same_v<Category, std::random_access_iterator_tag>) {
+        return "Random Access";
+    }
+    else if (std::is_same_v<Category, std::bidirectional_iterator_tag>) {
+        return "Bidirectional";
+    }
+    else if (std::is_same_v<Category, std::forward_iterator_tag>) {
+        return "Forward";
+    }
+    else if (std::is_same_v<Category, std::input_iterator_tag>) {
+        return "Input";
+    }
+    else {
+        return "Unknown Category!";
+    }
+}
 
+TEST(typeTraits, iterator_category)
+{
+    std::vector data{3.3};
+    EXPECT_EQ("Random Access"s, CheckCategory(std::begin(data)));
+    std::list data2{ 2.2 };
+    EXPECT_EQ("Bidirectional"s, CheckCategory(std::begin(data2)));
+    std::forward_list<double> data3{ 1.1 };
+    EXPECT_EQ("Forward"s, CheckCategory(data3.begin()));
+    std::istream_iterator<double> data4(std::cin);
+    EXPECT_EQ("Input"s, CheckCategory(data4));
+}
 
 
 
