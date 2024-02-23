@@ -53,3 +53,34 @@ TEST(typeTraits, valueType)
     EXPECT_FLOAT_EQ(6.6f, result, epsilon);
 }
 
+template<typename IteratorType>
+std::iterator_traits<IteratorType>::difference_type CalculateRange(IteratorType pointA, IteratorType pointB)
+{
+    typedef std::iterator_traits<IteratorType>::difference_type DiffType;
+    DiffType a = *pointA;
+    DiffType b = *pointB;
+    return abs(pointA - pointB);
+}
+
+TEST(typeTraits, difference_type)
+{
+    std::vector input{3.3, 2.1, 4.5, 8.4};
+    auto result = CalculateRange(std::begin(input), --std::end(input));
+    EXPECT_FLOAT_EQ(3, result);
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
