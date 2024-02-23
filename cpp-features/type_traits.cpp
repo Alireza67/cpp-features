@@ -1,6 +1,7 @@
 #include "pch.h"
 #include <iostream>
 #include <type_traits>
+#include <iterator>
 
 template <typename T>
 std::string CheckType() {
@@ -32,3 +33,23 @@ TEST(typeTraits, checkType)
     std::string xyz {"xyz"s};
     EXPECT_EQ("Type is neither integral nor floating point"s, CheckType<decltype(xyz)>());
 }
+
+
+template <typename IteratorType>
+std::iterator_traits<IteratorType>::value_type traitTest(IteratorType input)
+{
+    typedef std::iterator_traits<IteratorType>::value_type ValueType;
+
+    ValueType tmp{};
+    tmp = *input;
+    return tmp;
+}
+
+TEST(typeTraits, valueType)
+{
+    std::vector input{ 6.6, 3.4 };
+    auto result = traitTest(std::begin(input));
+    auto epsilon = 1e-6;
+    EXPECT_FLOAT_EQ(6.6f, result, epsilon);
+}
+
