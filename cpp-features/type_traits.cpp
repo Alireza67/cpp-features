@@ -105,16 +105,3 @@ TEST(typeTraits, iterator_category)
     std::istream_iterator<double> data4(std::cin);
     EXPECT_EQ("Input"s, CheckCategory(data4));
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
