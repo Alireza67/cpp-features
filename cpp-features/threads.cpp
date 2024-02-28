@@ -77,3 +77,69 @@ TEST(threads, rvalueParameter_temporary)
 
 	EXPECT_EQ(9.0, output);
 }
+
+class My_jthread
+{
+public:
+	My_jthread() = default;
+
+	template<typename Callable, typename ... Args>
+	explicit My_jthread(Callable&& function, Args&& ... args)
+		:t_(std::forward<Callable>(function), std::forward<Args>(args)...)
+	{}
+
+	~My_jthread()
+	{
+		if (t_.joinable())
+		{
+			t_.join();
+		}
+	}
+
+	My_jthread(const My_jthread& rhs) = delete;
+	My_jthread& operator=(const My_jthread& rhs) = delete;
+
+	My_jthread& operator=(My_jthread&& rhs) noexcept
+	{
+		if (&rhs == this)
+		{
+			return *this;
+		}
+
+		if (t_.joinable())
+		{
+			t_.join();
+		}
+		t_ = std::move(rhs.t_);
+		return *this;
+	}
+
+	bool Joinable()
+	{
+		return t_.joinable();
+	}
+
+	void Join()
+	{
+		t_.join();
+	}
+
+private:
+	std::thread t_;
+};
+
+TEST(threads, My_jthreadTest)
+{
+	double target{ 9.0 };
+	double output{ };
+	My_jthread obj;
+	EXPECT_FALSE(obj.Joinable());
+	{
+		auto inner = My_jthread(DummyPtr, std::make_unique<double>(target), std::ref(output));
+		obj = std::move(inner);
+		EXPECT_FALSE(inner.Joinable());
+	}
+	EXPECT_TRUE(obj.Joinable());
+	obj.Join();
+	EXPECT_EQ(target, output);
+}
