@@ -143,3 +143,54 @@ TEST(threads, My_jthreadTest)
 	obj.Join();
 	EXPECT_EQ(target, output);
 }
+
+
+void Counter(size_t number, std::atomic<size_t>& output)
+{
+	for (int i{}; i < number; i++)
+	{
+		output++;
+	}
+}
+
+auto GetTime = []() {return std::chrono::high_resolution_clock::now(); };
+TEST(threads, check_hardware)
+{
+	size_t target = 1'000'000;
+	auto numberOfHardwareThread { std::thread::hardware_concurrency()};
+
+
+	std::atomic<size_t> result2 = 0;
+	std::vector<std::thread> threadList2{};
+	auto start2 = GetTime();
+	for (auto i{ 0 }; i < 400; i++)
+	{
+		threadList2.emplace_back(Counter, (target / 400), std::ref(result2));
+	}
+	for (auto& item : threadList2)
+	{
+		item.join();
+	}
+	auto stop2 = GetTime();
+	EXPECT_EQ(target, result2);
+	std::chrono::duration<double> elapsed2 = stop2 - start2;
+
+
+	std::atomic<size_t> result = 0;
+	std::vector<std::thread> threadList{};
+	auto start = GetTime();
+	for (auto i{ 0 }; i < numberOfHardwareThread; i++)
+	{
+		threadList.emplace_back(Counter, (target / numberOfHardwareThread), std::ref(result));
+	}
+	for (auto& item : threadList)
+	{
+		item.join();
+	}
+	auto stop = GetTime();
+	EXPECT_EQ(target, result);
+	std::chrono::duration<double> elapsed = stop - start;
+
+
+	EXPECT_LT(elapsed.count(), elapsed2.count());
+}
