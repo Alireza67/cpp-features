@@ -194,3 +194,22 @@ TEST(threads, check_hardware)
 
 	EXPECT_LT(elapsed.count(), elapsed2.count());
 }
+
+TEST(threads, threadId)
+{
+	std::thread t0;
+	auto tmp = t0.get_id();
+	auto id0 = *reinterpret_cast<unsigned int*>(&tmp);
+	EXPECT_EQ(0, id0);
+
+	auto id{ 2 };
+	auto data{ 1.0 };
+	auto t = std::thread(Dummy, id, std::ref(data));
+	tmp = t.get_id();
+	auto id1 = *reinterpret_cast<unsigned int*>(&tmp);
+	EXPECT_TRUE(id1);
+	t.join();
+	tmp = t.get_id(); 
+	id1 = *reinterpret_cast<unsigned int*>(&tmp);
+	EXPECT_EQ(0, id1);
+}
