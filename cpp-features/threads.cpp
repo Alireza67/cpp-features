@@ -225,6 +225,7 @@ public:
 	std::vector<int> GetData() { return data_; }
 
 	friend void DeadlockSwap(Sdata& lhs, Sdata& rhs);
+	friend void SafelockSwap(Sdata& lhs, Sdata& rhs);
 
 private:
 	std::vector<int> data_{};
@@ -243,18 +244,37 @@ void DeadlockSwap(Sdata& lhs, Sdata& rhs)
 	std::swap(lhs.data_, rhs.data_);
 }
 
-void SwapOddTimes(Sdata& lhs, Sdata& rhs)
+void SafelockSwap(Sdata& lhs, Sdata& rhs)
+{
+	if (&lhs == &rhs)
+	{
+		return;
+	}
+
+	std::scoped_lock lk(lhs.lk_, rhs.lk_);
+	std::swap(lhs.data_, rhs.data_);
+}
+
+void SwapOddTimes(Sdata& lhs, Sdata& rhs, void(*swapper)(Sdata& lhs, Sdata& rhs))
 {
 	for (int i{}; i < 10001; i++)
 	{
-		DeadlockSwap(lhs, rhs);
+		swapper(lhs, rhs);
 	}
 }
 
 void DeadLockScenario(Sdata& lhs, Sdata& rhs)
 {
-	auto t1 = std::thread(SwapOddTimes, std::ref(lhs), std::ref(rhs));
-	auto t2 = std::thread(SwapOddTimes, std::ref(rhs), std::ref(lhs));
+	auto t1 = std::thread(SwapOddTimes, std::ref(lhs), std::ref(rhs), &DeadlockSwap);
+	auto t2 = std::thread(SwapOddTimes, std::ref(rhs), std::ref(lhs), &DeadlockSwap);
+	t1.join();
+	t2.join();
+}
+
+void SafeLockScenario(Sdata& lhs, Sdata& rhs)
+{
+	auto t1 = std::thread(SwapOddTimes, std::ref(lhs), std::ref(rhs), &SafelockSwap);
+	auto t2 = std::thread(SwapOddTimes, std::ref(rhs), std::ref(lhs), &SafelockSwap);
 	t1.join();
 	t2.join();
 }
@@ -262,7 +282,7 @@ void DeadLockScenario(Sdata& lhs, Sdata& rhs)
 void DetectStuck(Sdata& lhs, Sdata& rhs)
 {
 	auto asyncFuture = std::async(std::launch::async, DeadLockScenario, std::ref(lhs), std::ref(rhs));
-	if (asyncFuture.wait_for(std::chrono::seconds(2)) == std::future_status::timeout)
+	if (asyncFuture.wait_for(std::chrono::seconds(3)) == std::future_status::timeout)
 	{
 		exit(1);
 	}
@@ -275,8 +295,19 @@ TEST(threads, deadlockSwap)
 	Sdata a(target1);
 	Sdata b(target2);
 
-	auto t = std::thread(SwapOddTimes, std::ref(a), std::ref(b));
+	auto t = std::thread(SwapOddTimes, std::ref(a), std::ref(b), &DeadlockSwap);
 	t.join();
 	EXPECT_EQ(target2, a.GetData());
 	EXPECT_DEATH(DetectStuck(a, b),".*");	
+}
+
+TEST(threads, safeSwap)
+{
+	auto target1 = std::vector{ 1,2,3,4,5 };
+	auto target2 = std::vector{ 10,20,30,40,50 };
+	Sdata a(target1);
+	Sdata b(target2);
+	SafeLockScenario(a, b);
+	EXPECT_EQ(target1, a.GetData());
+	EXPECT_EQ(target2, b.GetData());
 }
