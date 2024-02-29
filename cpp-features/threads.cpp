@@ -311,3 +311,39 @@ TEST(threads, safeSwap)
 	EXPECT_EQ(target1, a.GetData());
 	EXPECT_EQ(target2, b.GetData());
 }
+
+class ThreadLocalSample
+{
+public:
+	int GetId()
+	{
+		return id_;
+	}
+
+	void SetId(int id)
+	{
+		id_ = id;
+	}
+private:
+	static thread_local int id_;
+};
+thread_local int ThreadLocalSample::id_ = 10;
+
+void AnotherMethod(ThreadLocalSample& obj)
+{
+	EXPECT_EQ(10, obj.GetId());
+	obj.SetId(8);
+	EXPECT_EQ(8, obj.GetId());
+}
+
+TEST(threads, threadlocal)
+{
+	ThreadLocalSample obj;
+	EXPECT_EQ(10, obj.GetId());
+	obj.SetId(6);
+	EXPECT_EQ(6, obj.GetId());
+	
+	auto t = std::thread(AnotherMethod, std::ref(obj));
+	t.join();
+	EXPECT_EQ(6, obj.GetId());
+}
