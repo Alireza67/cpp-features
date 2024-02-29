@@ -1,6 +1,8 @@
 #include "pch.h"
 #include <thread>
 #include <memory>
+#include <mutex>
+#include <future>
 
 class NewTask
 {
@@ -212,4 +214,69 @@ TEST(threads, threadId)
 	tmp = t.get_id(); 
 	id1 = *reinterpret_cast<unsigned int*>(&tmp);
 	EXPECT_EQ(0, id1);
+}
+
+class Sdata
+{
+public:
+	Sdata(std::vector<int> data)
+		:data_(std::move(data)) {}
+
+	std::vector<int> GetData() { return data_; }
+
+	friend void DeadlockSwap(Sdata& lhs, Sdata& rhs);
+
+private:
+	std::vector<int> data_{};
+	std::mutex lk_{};
+};
+
+void DeadlockSwap(Sdata& lhs, Sdata& rhs)
+{
+	if (&lhs == &rhs)
+	{
+		return;
+	}
+
+	std::lock_guard<std::mutex> lk(lhs.lk_);
+	std::lock_guard<std::mutex> lk2(rhs.lk_);
+	std::swap(lhs.data_, rhs.data_);
+}
+
+void SwapOddTimes(Sdata& lhs, Sdata& rhs)
+{
+	for (int i{}; i < 10001; i++)
+	{
+		DeadlockSwap(lhs, rhs);
+	}
+}
+
+void DeadLockScenario(Sdata& lhs, Sdata& rhs)
+{
+	auto t1 = std::thread(SwapOddTimes, std::ref(lhs), std::ref(rhs));
+	auto t2 = std::thread(SwapOddTimes, std::ref(rhs), std::ref(lhs));
+	t1.join();
+	t2.join();
+}
+
+void DetectStuck(Sdata& lhs, Sdata& rhs)
+{
+	auto asyncFuture = std::async(std::launch::async, DeadLockScenario, std::ref(lhs), std::ref(rhs));
+	if (asyncFuture.wait_for(std::chrono::seconds(2)) == std::future_status::timeout)
+	{
+		exit(1);
+	}
+}
+
+TEST(threads, deadlockSwap)
+{
+	auto target1 = std::vector{ 1,2,3,4,5 };
+	auto target2 = std::vector{ 10,20,30,40,50 };
+	Sdata a(target1);
+	Sdata b(target2);
+
+	auto t = std::thread(SwapOddTimes, std::ref(a), std::ref(b));
+	t.join();
+	EXPECT_EQ(target2, a.GetData());
+	EXPECT_DEATH(DetectStuck(a, b),".*");	
 }
