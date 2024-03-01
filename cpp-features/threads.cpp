@@ -226,6 +226,7 @@ public:
 
 	friend void DeadlockSwap(Sdata& lhs, Sdata& rhs);
 	friend void SafelockSwap(Sdata& lhs, Sdata& rhs);
+	friend void SafelockSwapDefer(Sdata& lhs, Sdata& rhs);
 
 private:
 	std::vector<int> data_{};
@@ -255,6 +256,19 @@ void SafelockSwap(Sdata& lhs, Sdata& rhs)
 	std::swap(lhs.data_, rhs.data_);
 }
 
+void SafelockSwapDefer(Sdata& lhs, Sdata& rhs)
+{
+	if (&lhs == &rhs)
+	{
+		return;
+	}
+
+	std::unique_lock lk1(lhs.lk_, std::defer_lock);
+	std::unique_lock lk2(rhs.lk_, std::defer_lock);
+	std::lock(lk1, lk2);
+	std::swap(lhs.data_, rhs.data_);
+}
+
 void SwapOddTimes(Sdata& lhs, Sdata& rhs, void(*swapper)(Sdata& lhs, Sdata& rhs))
 {
 	for (int i{}; i < 10001; i++)
@@ -275,6 +289,14 @@ void SafeLockScenario(Sdata& lhs, Sdata& rhs)
 {
 	auto t1 = std::thread(SwapOddTimes, std::ref(lhs), std::ref(rhs), &SafelockSwap);
 	auto t2 = std::thread(SwapOddTimes, std::ref(rhs), std::ref(lhs), &SafelockSwap);
+	t1.join();
+	t2.join();
+}
+
+void SafeLockScenarioDefer(Sdata& lhs, Sdata& rhs)
+{
+	auto t1 = std::thread(SwapOddTimes, std::ref(lhs), std::ref(rhs), &SafelockSwapDefer);
+	auto t2 = std::thread(SwapOddTimes, std::ref(rhs), std::ref(lhs), &SafelockSwapDefer);
 	t1.join();
 	t2.join();
 }
@@ -308,6 +330,17 @@ TEST(threads, safeSwap)
 	Sdata a(target1);
 	Sdata b(target2);
 	SafeLockScenario(a, b);
+	EXPECT_EQ(target1, a.GetData());
+	EXPECT_EQ(target2, b.GetData());
+}
+
+TEST(threads, safeSwap_deferlock)
+{
+	auto target1 = std::vector{ 1,2,3,4,5 };
+	auto target2 = std::vector{ 10,20,30,40,50 };
+	Sdata a(target1);
+	Sdata b(target2);
+	SafeLockScenarioDefer(a, b);
 	EXPECT_EQ(target1, a.GetData());
 	EXPECT_EQ(target2, b.GetData());
 }
