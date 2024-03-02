@@ -380,3 +380,67 @@ TEST(threads, threadlocal)
 	t.join();
 	EXPECT_EQ(6, obj.GetId());
 }
+
+class AudioCard
+{
+public:
+	explicit AudioCard() = default;
+	virtual ~AudioCard() = default;
+
+	virtual void Initialize() = 0;
+};
+
+class MockAudioCard : public AudioCard
+{
+public:
+	MOCK_METHOD(void, Initialize, (), (override));
+};
+
+class AudioCardDriver
+{
+public:
+	explicit AudioCardDriver(std::shared_ptr<AudioCard> audioCard)
+		:audioCard_(std::move(audioCard)) {}
+
+	void Run()
+	{
+		std::call_once(init_, &AudioCard::Initialize, audioCard_.get());
+	}
+
+	void RunWithoutRestriction()
+	{
+		audioCard_->Initialize();
+	}
+
+private:
+	std::once_flag init_;
+	std::shared_ptr<AudioCard> audioCard_{};
+};
+
+TEST(threads, call_once)
+{
+	auto audioCard = std::make_shared<MockAudioCard>();
+	EXPECT_CALL(*audioCard, Initialize()).Times(1);
+	AudioCardDriver driver(std::dynamic_pointer_cast<AudioCard>(audioCard));
+
+	auto t1 = std::thread(&AudioCardDriver::Run, &driver);
+	auto t2 = std::thread(&AudioCardDriver::Run, &driver);
+	auto t3 = std::thread(&AudioCardDriver::Run, &driver);
+	t1.join();
+	t2.join();
+	t3.join();
+}
+
+TEST(threads, without_call_once)
+{
+	auto audioCard = std::make_shared<MockAudioCard>();
+	EXPECT_CALL(*audioCard, Initialize()).Times(3);
+	AudioCardDriver driver(std::dynamic_pointer_cast<AudioCard>(audioCard));
+
+	auto t1 = std::thread(&AudioCardDriver::RunWithoutRestriction, &driver);
+	auto t2 = std::thread(&AudioCardDriver::RunWithoutRestriction, &driver);
+	auto t3 = std::thread(&AudioCardDriver::RunWithoutRestriction, &driver);
+	t1.join();
+	t2.join();
+	t3.join();
+}
