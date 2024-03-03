@@ -444,3 +444,19 @@ TEST(threads, without_call_once)
 	t2.join();
 	t3.join();
 }
+
+std::string GenerateGreetingMessage(std::string name, int age)
+{
+	return "Hello Dear "s + name + " with "s + std::to_string(age) + " years old!"s;
+}
+
+TEST(threads, packaged_task_)
+{
+	std::packaged_task<std::string(std::string, int)> task(GenerateGreetingMessage);
+	EXPECT_TRUE(task.valid());
+	auto f = task.get_future();
+	EXPECT_FALSE(f._Is_ready());
+	task("John", 40);
+	auto result = f.get();
+	EXPECT_EQ("Hello Dear John with 40 years old!"s, result);
+}
