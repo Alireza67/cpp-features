@@ -516,3 +516,17 @@ TEST(threads, promise_setException)
 	t1.join();
 	t2.join();
 }
+
+TEST(threads, shared_future)
+{
+	std::promise<int> promise;
+	auto future = promise.get_future().share();
+
+	std::thread t1(CalculationUnit, std::ref(promise), 1);
+	std::thread t2(CheckAnswer, future, 1);
+	std::thread t3(CheckAnswer, future, 1);
+
+	t1.join();
+	t2.join();
+	t3.join();
+}
