@@ -460,3 +460,59 @@ TEST(threads, packaged_task_)
 	auto result = f.get();
 	EXPECT_EQ("Hello Dear John with 40 years old!"s, result);
 }
+
+void CalculationUnit(std::promise<int>& promise, int state)
+{
+	if (state)
+	{
+		promise.set_value(10);
+	}
+	else
+	{
+		promise.set_exception(std::make_exception_ptr(std::logic_error("SPECIFIC ERROR!")));
+	}
+}
+
+void CheckAnswer(std::shared_future<int> future, int state)
+{
+	if (state)
+	{
+		EXPECT_EQ(10, future.get());
+	}
+	else
+	{
+		try
+		{
+			future.get();
+		}
+		catch (const std::exception& e)
+		{
+			auto msg = std::string(e.what());
+			EXPECT_EQ("SPECIFIC ERROR!", msg);
+		}
+	}
+}
+
+TEST(threads, promise_setValue)
+{
+	std::promise<int> promise;
+	auto future = promise.get_future().share();
+
+	std::thread t1(CalculationUnit, std::ref(promise), 1);
+	std::thread t2(CheckAnswer, future, 1);
+
+	t1.join();
+	t2.join();
+}
+
+TEST(threads, promise_setException)
+{
+	std::promise<int> promise;
+	auto future = promise.get_future().share();
+
+	std::thread t1(CalculationUnit, std::ref(promise), 0);
+	std::thread t2(CheckAnswer, future, 0);
+
+	t1.join();
+	t2.join();
+}
