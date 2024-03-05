@@ -149,7 +149,7 @@ TEST(ranges, reverse)
 TEST(ranges, pipeline)
 {
     auto data{ std::vector{0,1,2,3,4,5,6,7,8,9} };
-    auto target{ std::vector{0, 1, 4,5,16,25,36,49, 8, 9} };
+    auto target{ std::vector{4, 9, 16, 25, 36, 49} };
 
     auto square = [](auto& i) { return i * i; };
     auto takerCondition = [](auto& i) {return i < 8; };
@@ -159,10 +159,9 @@ TEST(ranges, pipeline)
                                | std::views::drop_while(droperCondition)
                                | std::views::transform(square);
 
-    for (auto&& item : pipelineResult)
+    for (auto i{ 0 }; auto&& item: pipelineResult)
     {
-        item *= 2;
+		EXPECT_EQ(target[i], item);
+        i++;
     }
-
-    EXPECT_EQ(target, data);
 }
