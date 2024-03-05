@@ -145,3 +145,24 @@ TEST(ranges, reverse)
         i--;
     }
 }
+
+TEST(ranges, pipeline)
+{
+    auto data{ std::vector{0,1,2,3,4,5,6,7,8,9} };
+    auto target{ std::vector{0, 1, 4,5,16,25,36,49, 8, 9} };
+
+    auto square = [](auto& i) { return i * i; };
+    auto takerCondition = [](auto& i) {return i < 8; };
+    auto droperCondition = [](auto& i) {return i < 2; };
+
+    auto pipelineResult = data | std::views::take_while(takerCondition)
+                               | std::views::drop_while(droperCondition)
+                               | std::views::transform(square);
+
+    for (auto&& item : pipelineResult)
+    {
+        item *= 2;
+    }
+
+    EXPECT_EQ(target, data);
+}
