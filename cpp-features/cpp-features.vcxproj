@@ -37,6 +37,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\packages\gmock.1.11.0\lib\native\src\gtest\src\gtest_main.cc" />
+    <ClCompile Include="atomics.cpp" />
     <ClCompile Include="constructors.cpp" />
     <ClCompile Include="containers.cpp" />
     <ClCompile Include="file_system.cpp" />
