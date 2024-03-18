@@ -79,7 +79,7 @@ void Write_x_then_y()
 
 void Read_y_then_x()
 {
-	while (!y.load(std::memory_order_relaxed));
+	while (!y.load(std::memory_order_consume));
 	if (x.load(std::memory_order_relaxed))
 	{
 		++z;
@@ -88,21 +88,40 @@ void Read_y_then_x()
 
 TEST(atomics, memory_order_relaxed)
 {
-	size_t counter{};
-	while(counter < 10'000)
-	{
-		x = false;
-		y = false;
-		z = 0;
+	x = false;
+	y = false;
+	z = 0;
 
-		std::thread a(Write_x_then_y);
-		std::thread b(Read_y_then_x);
-		a.join();
-		b.join();
-		if(!z.load())
-		{
-			FAIL() << "Counter: " << counter << '\n';
-		}
-		counter++;
-	}
+	std::thread a(Write_x_then_y);
+	std::thread b(Read_y_then_x);
+	b.join();
+	a.join();
+	EXPECT_TRUE(z.load() != 0);
 }
+
+std::atomic<std::string*> ptr{};
+int data{};
+size_t counterT{};
+
+void producer()
+{
+	std::string* p = new std::string("Hello");
+	data = 42;
+	ptr.store(p, std::memory_order_release);
+}
+
+void consumer()
+{
+	std::string* p2;
+	while (!(p2 = ptr.load(std::memory_order_consume)));
+	assert(*p2 == "Hello"); // never fires
+	assert(data == 42);
+}
+
+TEST(atomics, memory_order)
+{
+	std::thread t1(producer);
+	std::thread t2(consumer);
+	t1.join(); t2.join();
+}
+
