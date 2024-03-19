@@ -9,6 +9,7 @@ std::tuple<int, std::string> GetInfo(int input)
 TEST(ignore, check)
 {
 	auto [a, b] = GetInfo(40);
-
+	EXPECT_EQ(50, a);
 	std::tie(a, std::ignore) = GetInfo(50);
+	EXPECT_EQ(60, a);
 }
