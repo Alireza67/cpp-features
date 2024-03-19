@@ -55,6 +55,7 @@
     <ClCompile Include="smart_pointers.cpp" />
     <ClCompile Include="threads.cpp" />
     <ClCompile Include="type_traits.cpp" />
+    <ClCompile Include="undifined_behaviour.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
