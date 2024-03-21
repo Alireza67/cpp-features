@@ -220,6 +220,10 @@ public:
 		:parameter1_(p1), parameter2_(p2), parameter3_(p3)
 	{}
 
+	/*
+	'atomic<T> requires T to be trivially copyable, copy constructible,
+	move constructible, copy assignable, and move assignable.'
+
 	ComplicatedData& operator=(const ComplicatedData& other)
 	{
 		parameter1_ = other.parameter1_;
@@ -227,11 +231,7 @@ public:
 		parameter3_ = other.parameter3_;
 		return *this;
 	}
-
-	/*
-	
-	'atomic<T> requires T to be trivially copyable, copy constructible, 
-	move constructible, copy assignable, and move assignable.'
+	*/
 	
 	ComplicatedData operator*(int coff)
 	{
@@ -241,7 +241,7 @@ public:
 		tmp.parameter3_ *= coff;
 		return tmp;
 	}
-	*/
+	
 
 	auto operator<=>(const ComplicatedData& other) const = default;
 
