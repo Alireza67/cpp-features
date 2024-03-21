@@ -213,3 +213,46 @@ TEST(atomics, compare_exchange_weak)
 	}
 }
 
+class ComplicatedData
+{
+public:
+	ComplicatedData(int32_t p1, double p2, int64_t p3)
+		:parameter1_(p1), parameter2_(p2), parameter3_(p3)
+	{}
+
+	ComplicatedData operator*(int coff)
+	{
+		auto tmp{*this};
+		tmp.parameter1_ *= coff;
+		tmp.parameter2_ *= coff;
+		tmp.parameter3_ *= coff;
+		return tmp;
+	}
+
+	auto operator<=>(const ComplicatedData& other) const = default;
+
+private:
+	int32_t parameter1_{};
+	double parameter2_{};
+	int64_t parameter3_{};
+};
+
+TEST(atomics, compare_exchange_weak_complicatedData)
+{
+	std::atomic<ComplicatedData> data({ 25, 32.5, 19000000000 });
+	auto expected = data.load();
+
+	// Other Thread Change Value of data
+	auto newValue = ComplicatedData{ 52, -96.6564, 987654321 };
+	auto future = std::async(
+		std::launch::async, ChangeValue<ComplicatedData>, std::ref(data), newValue);
+	future.get();
+
+	//Do some caluculation based on old data (expected)
+	auto calcResult = expected * 5;
+
+	auto result = data.compare_exchange_weak(expected, calcResult);
+	EXPECT_FALSE(result);
+	EXPECT_EQ(newValue, expected);
+	EXPECT_EQ(newValue, data.load());
+}
