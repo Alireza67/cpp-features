@@ -47,7 +47,7 @@ TEST(sourceLocation, checkByException)
 	{		
 		EXPECT_EQ("Test exception!"s, std::string(e.what()));
 		EXPECT_EQ("sourceLocation.cpp"s, fs::path(std::string(e.where().file_name())).filename().string());
-		EXPECT_EQ("Foo"s, std::string(e.where().function_name()));
+		EXPECT_EQ("void __cdecl Foo(void)"s, std::string(e.where().function_name()));
 		EXPECT_EQ(37u, e.where().line());
 	}
 }
