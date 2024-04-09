@@ -55,6 +55,7 @@
     <ClCompile Include="readFiles.cpp" />
     <ClCompile Include="smart_pointers.cpp" />
     <ClCompile Include="threads.cpp" />
+    <ClCompile Include="threadSafe.cpp" />
     <ClCompile Include="type_traits.cpp" />
     <ClCompile Include="ignore.cpp" />
   </ItemGroup>
