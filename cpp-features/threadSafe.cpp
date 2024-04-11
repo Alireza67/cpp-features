@@ -1,6 +1,7 @@
 #include "pch.h"
 #include <stack>
 #include <mutex>
+#include <queue>
 #include <thread>
 
 template<typename T>
@@ -209,3 +210,71 @@ TEST(LockFree, lock_free_stack)
 	t4.join();
 	t5.join();
 }
+
+template<typename T>
+class ThreadSafeQueue
+{
+public:
+	ThreadSafeQueue(){}
+
+	void Push(T new_value)
+	{
+		{
+			std::lock_guard<std::mutex> lk(lock_);
+			data_.push(std::move(new_value));
+		}
+		notifyPoint_.notify_one();
+	}
+
+	void Wait_And_Pop(T& value)
+	{
+		std::unique_lock<std::mutex> lk(lock_);
+		notifyPoint_.wait(lk, [this] {return !data_.empty(); });
+		value = std::move(data_.front());
+		data_.pop();
+	}
+
+	std::shared_ptr<T> Wait_And_Pop()
+	{
+		std::unique_lock<std::mutex> lk(lock_);
+		notifyPoint_.wait(lk, [this] {return !data_.empty(); });
+		std::shared_ptr<T> res(std::make_shared<T>(std::move(data_.front())));
+		data_.pop();
+		return res;
+	}
+
+	bool Try_Pop(T& value)
+	{
+		std::lock_guard<std::mutex> lk(lock_);
+		if (data_.empty())
+		{
+			return false;
+		}
+		value = std::move(data_.front());
+		data_.pop();
+		return true;
+	}
+
+	std::shared_ptr<T> Try_Pop()
+	{
+		std::lock_guard<std::mutex> lk(lock_);
+		if (data_.empty())
+		{
+			return std::shared_ptr<T>();
+		}
+		std::shared_ptr<T> res(std::make_shared<T>(std::move(data_.front())));
+		data_.pop();
+		return res;
+	}
+
+	bool Empty() const
+	{
+		std::lock_guard<std::mutex> lk(lock_);
+		return data_.empty();
+	}
+
+private:
+	std::queue<T> data_;
+	mutable std::mutex lock_;
+	std::condition_variable notifyPoint_;
+};
