@@ -81,7 +81,8 @@ void Consumer(T& stack, size_t counter)
 {
 	for (std::size_t i{ 0 }; i < counter; ++i)
 	{
-		stack.Pop();
+		stack.
+			Pop();
 	}
 }
 
@@ -226,7 +227,7 @@ public:
 		notifyPoint_.notify_one();
 	}
 
-	void Wait_And_Pop(T& value)
+	void Pop(T& value)
 	{
 		std::unique_lock<std::mutex> lk(lock_);
 		notifyPoint_.wait(lk, [this] {return !data_.empty(); });
@@ -234,7 +235,7 @@ public:
 		data_.pop();
 	}
 
-	std::shared_ptr<T> Wait_And_Pop()
+	std::shared_ptr<T> Pop()
 	{
 		std::unique_lock<std::mutex> lk(lock_);
 		notifyPoint_.wait(lk, [this] {return !data_.empty(); });
@@ -278,3 +279,18 @@ private:
 	mutable std::mutex lock_;
 	std::condition_variable notifyPoint_;
 };
+
+TEST(ThreadSafe, queue)
+{
+	ThreadSafeQueue<int> stack;
+	auto t1 = std::thread(Producer<ThreadSafeQueue<int>>, std::ref(stack), 100'000);
+	auto t2 = std::thread(Consumer<ThreadSafeQueue<int>>, std::ref(stack), 25'000);
+	auto t3 = std::thread(Consumer<ThreadSafeQueue<int>>, std::ref(stack), 25'000);
+	auto t4 = std::thread(Consumer<ThreadSafeQueue<int>>, std::ref(stack), 25'000);
+	auto t5 = std::thread(Consumer<ThreadSafeQueue<int>>, std::ref(stack), 25'000);
+	t1.join();
+	t2.join();
+	t3.join();
+	t4.join();
+	t5.join();
+}
