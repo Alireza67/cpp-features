@@ -54,6 +54,7 @@
     <ClCompile Include="quicksort.cpp" />
     <ClCompile Include="readFiles.cpp" />
     <ClCompile Include="smart_pointers.cpp" />
+    <ClCompile Include="templates.cpp" />
     <ClCompile Include="threads.cpp" />
     <ClCompile Include="threadSafe.cpp" />
     <ClCompile Include="type_traits.cpp" />
